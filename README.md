@@ -1,6 +1,9 @@
 # StackIQ
 
-A weekly AI/SaaS utilization diagnostic for Claude (Cowork / Claude Code). StackIQ audits how well an organization's AI and SaaS tools are actually used — finding idle seats, tier mismatches, duplicate tools, orphaned accounts, and shadow IT — sizes every finding in dollars, seats, or accounts, ships an Excel workbook and a CEO-level deck, and then executes approved remediations behind a hard human-approval gate.
+A AI/SaaS utilization diagnostic for Claude (Cowork / Claude Code). StackIQ audits how well an organization's AI and SaaS tools are actually used — finding idle seats, tier mismatches, duplicate tools, orphaned accounts, and shadow IT — sizes every finding in dollars, seats, or accounts, ships an Excel workbook and a CEO-level deck, and then executes approved remediations behind a hard human-approval gate.
+
+<img width="1345" height="402" alt="image" src="https://github.com/user-attachments/assets/7a7ca82b-6d6c-44f7-8a1a-25fd7c328f6f" />
+
 
 It is a five-stage, read-then-act pipeline. Stages 1–4 are strictly read-only; only stage 5 writes or acts, and never without an explicit human YES.
 
