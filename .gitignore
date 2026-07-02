@@ -1,0 +1,18 @@
+# Packaged artifacts
+*.plugin
+*.skill
+dist/
+
+# Runtime state written by the pipeline
+state/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,10 @@
+{
+  "name": "stackiq-plugin",
+  "version": "1.0.0",
+  "description": "StackIQ: weekly AI/SaaS utilization diagnostic. A 5-stage read-then-act pipeline (orchestrator, intake, diagnostic, insight, action) that audits tool spend and adoption, finds idle seats, tier mismatches, overlap and shadow-IT, sizes each finding in dollars/seats/accounts, ships an Excel workbook + CEO deck, then executes approved remediations behind a hard human-approval gate. MCP-first, file/Chrome fallback. No API keys.",
+  "author": {
+    "name": "CloudMotiv"
+  },
+  "keywords": ["saas","ai","utilization","cost","audit","license","seats","spend","optimization","shadow-it","stackiq","diagnostic"],
+  "skills": "./skills/"
+}

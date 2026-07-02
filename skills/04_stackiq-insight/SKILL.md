@@ -1,0 +1,49 @@
+---
+name: stackiq-insight
+description: >
+  StackIQ insight (Skill 4 of 5). Auto-invoked by the StackIQ orchestrator after Diagnostic appends its
+  block; not normally triggered directly. The rendering layer: it presents Diagnostic's findings, never
+  re-computes them. Normalizes each finding's size to a comparable dollar impact via the scale anchor,
+  orders findings money-descending, then produces two deliverables — a detailed Excel workbook (every
+  finding, all evidence, gaps and shadow-IT on their own tabs) via the xlsx skill, and a CEO-level
+  PowerPoint deck structured by client-facing category (Dx, Rx, Triage, Dx+) via the pptx skill.
+  Confidence drives framing: confirmed findings are asserted, probable findings are hedged as "worth
+  verifying." Handles the clean-bill case with green-status deliverables. Uses run comparator for
+  absolute vs week-over-week language. Writes the insight block with both file paths and the ordered
+  finding ids, and hands off to Action.
+---
+
+# StackIQ Insight (Skill 4 of 5)
+
+Turns the Diagnostic findings into two artifacts: a full-audit Excel workbook and a CEO-level deck. It orders and frames; it does not re-analyze or re-size beyond normalization for ranking.
+
+## On entry
+
+Read from `state/session.json`: `problem_statement`, `intake` (for the `scale` anchor), and the full `diagnostic` block (`findings`, `gaps`, `discovered_tools`, `clean_bill`). If `run_number > 1`, read `state/history/run_<n-1>.json` for prior values used in delta framing. Field shapes are in the orchestrator's `references/state-schema.md`.
+
+## Workflow
+
+1. **Branch on `clean_bill`.**
+   - `true` → produce green-status deliverables: a healthy deck and a workbook with no findings table (a coverage/what-was-checked summary instead). This is a success path, not an error. Still emit `insight` with both paths.
+   - findings present → continue.
+2. **Dollar-ordering.** Normalize each finding's `size` (`$` / `seats` / `accounts`) to a comparable dollar impact using the `intake.scale` anchor (e.g. seats × cost-per-seat band). Rank sized findings descending; sink unsizable/qualitative findings below them. Emit the resulting order as `ordered_finding_ids`.
+3. **Comparator framing.** Read each finding's `comparator`:
+   - `baseline` (run 1) → absolute snapshot language ("3 idle seats, ~$X/mo").
+   - `week_over_week` (run 2+) → delta language ("+1 idle seat vs last week"), pulling the prior value from the history snapshot.
+4. **Excel render (via the `xlsx` skill).** One row per finding with: `category`, `mode`, `title`, `affected_tools`, `severity`, `confidence`, `size`, `value`, `evidence`, `recommendation_hook`. Separate tabs for `gaps` and `discovered_tools`. Full audit trail — drop nothing. This is the internal document, so it carries `mode`.
+5. **PPT render (via the `pptx` skill).** Structure by client-facing `category` (Dx / Rx / Triage / Dx+), NOT by internal `mode`. Order slides money-descending. Let `confidence` drive framing — `confirmed` asserted, `probable` framed as "worth verifying." Show `gaps` as coverage notes and `discovered_tools` as a shadow-IT slide. Weight visual priority by `severity`. This is the CEO document, so it carries `category`.
+6. **Write state.** Append `insight` with `excel_path`, `ppt_path`, and `ordered_finding_ids`. Set `stage.status.insight = done`.
+
+Before building either deliverable, read the relevant format skill (the `xlsx` skill for the workbook, the `pptx` skill for the deck) so the output follows its conventions. Save both files into the working directory and record absolute paths.
+
+## Guardrails
+
+- **Pure rendering.** Present Diagnostic's findings; never recompute or re-size beyond the normalization used for ordering.
+- **Clean bill = success deliverable**, never a failure or an empty output.
+- **Probable stays hedged** in both the deck and the workbook.
+- **Category vs mode split:** the PPT carries `category` (client-facing); the Excel carries `mode` (internal).
+- Both deliverables are produced regardless of finding count.
+
+## Handoff
+
+The `insight` block feeds Action (Skill 5): it reads `ordered_finding_ids` for action priority and pulls each finding's `recommendation_hook` + `mode` from the diagnostic block to build the action plan. Skill 5 will append an Action tab to the same workbook at `excel_path` (append-only, keyed by `finding_id`).
