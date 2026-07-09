@@ -7,12 +7,12 @@
     {
       "name": "stackiq-plugin",
       "source": "./",
-      "description": "StackIQ: weekly AI/SaaS utilization diagnostic. A 5-stage read-then-act pipeline that audits tool spend and adoption, sizes findings in dollars/seats/accounts, ships an Excel workbook + CEO deck, then executes approved remediations behind a hard human-approval gate.",
-      "version": "1.0.0",
+      "description": "StackIQ: weekly AI/SaaS utilization diagnostic. A 5-stage read-then-act pipeline that audits tool spend and adoption, sizes findings in dollars/seats/accounts, ships an Excel workbook + CEO deck, then executes approved remediations behind a hard human-approval gate. Name specific tools, or ask for a full-stack audit and StackIQ will discover the rest.",
+      "version": "1.1.0",
       "author": {
         "name": "CloudMotiv"
       },
-      "keywords": ["saas","ai","utilization","cost","audit","license","seats","spend","optimization","shadow-it","stackiq","diagnostic"]
+      "keywords": ["saas","ai","utilization","cost","audit","license","seats","spend","optimization","shadow-it","stackiq","diagnostic","discovery"]
     }
   ]
 }

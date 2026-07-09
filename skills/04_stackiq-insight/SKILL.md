@@ -1,16 +1,16 @@
 ---
 name: stackiq-insight
 description: >
-  StackIQ insight (Skill 4 of 5). Auto-invoked by the StackIQ orchestrator after Diagnostic appends its
-  block; not normally triggered directly. The rendering layer: it presents Diagnostic's findings, never
-  re-computes them. Normalizes each finding's size to a comparable dollar impact via the scale anchor,
-  orders findings money-descending, then produces two deliverables — a detailed Excel workbook (every
-  finding, all evidence, gaps and shadow-IT on their own tabs) via the xlsx skill, and a CEO-level
-  PowerPoint deck structured by client-facing category (Dx, Rx, Triage, Dx+) via the pptx skill.
-  Confidence drives framing: confirmed findings are asserted, probable findings are hedged as "worth
-  verifying." Handles the clean-bill case with green-status deliverables. Uses run comparator for
-  absolute vs week-over-week language. Writes the insight block with both file paths and the ordered
-  finding ids, and hands off to Action.
+  StackIQ insight (Skill 4 of 5). Auto-invoked after Diagnostic appends its block; not normally
+  triggered directly. Rendering layer: presents Diagnostic's findings, never re-computes them.
+  Normalizes size to a comparable dollar impact via the scale anchor, orders findings money-
+  descending, then produces an Excel workbook (findings, evidence, gaps, shadow-IT on their own
+  tabs) via the xlsx skill, and a CEO-level PowerPoint deck structured by client-facing category
+  (Dx, Rx, Triage, Dx+) via the pptx skill. When Diagnostic ran full-stack discovery, also renders
+  a coverage summary — tools named vs. discovered, sources used or unavailable, clean vs. deep-
+  dived counts. Confidence drives framing: confirmed asserted, probable hedged as "worth
+  verifying." Handles clean-bill with green-status deliverables. Writes insight with file paths
+  and ordered finding ids, hands off to Action.
 ---
 
 # StackIQ Insight (Skill 4 of 5)
@@ -19,20 +19,21 @@ Turns the Diagnostic findings into two artifacts: a full-audit Excel workbook an
 
 ## On entry
 
-Read from `state/session.json`: `problem_statement`, `intake` (for the `scale` anchor), and the full `diagnostic` block (`findings`, `gaps`, `discovered_tools`, `clean_bill`). If `run_number > 1`, read `state/history/run_<n-1>.json` for prior values used in delta framing. Field shapes are in the orchestrator's `references/state-schema.md`.
+Read from `state/session.json`: `problem_statement`, `intake` (for the `scale` anchor), and the full `diagnostic` block (`findings`, `gaps`, `discovered_tools`, `stack_summary`, `clean_bill`). If `run_number > 1`, read `state/history/run_<n-1>.json` for prior values used in delta framing. Field shapes are in the orchestrator's `references/state-schema.md`.
 
 ## Workflow
 
 1. **Branch on `clean_bill`.**
    - `true` → produce green-status deliverables: a healthy deck and a workbook with no findings table (a coverage/what-was-checked summary instead). This is a success path, not an error. Still emit `insight` with both paths.
    - findings present → continue.
-2. **Dollar-ordering.** Normalize each finding's `size` (`$` / `seats` / `accounts`) to a comparable dollar impact using the `intake.scale` anchor (e.g. seats × cost-per-seat band). Rank sized findings descending; sink unsizable/qualitative findings below them. Emit the resulting order as `ordered_finding_ids`.
-3. **Comparator framing.** Read each finding's `comparator`:
+2. **Coverage summary — only when `stack_summary.discovery_ran` is true.** Render a short, plain-language coverage block: how many tools were named vs. discovered, which discovery sources ran (`discovery_sources_used`) vs. were unavailable (`discovery_sources_unavailable`, framed as "couldn't check X — here's what that means for coverage"), and how many tools were triaged clean vs. given the full deep-dive. This is what lets the reader trust that "audit my whole stack" actually happened, not just the tools they thought to name.
+3. **Dollar-ordering.** Normalize each finding's `size` (`$` / `seats` / `accounts`) to a comparable dollar impact using the `intake.scale` anchor (e.g. seats × cost-per-seat band). Rank sized findings descending; sink unsizable/qualitative findings below them. This ranking treats every finding the same regardless of whether its tool was named or discovered — origin doesn't affect priority, dollar impact does. Emit the resulting order as `ordered_finding_ids`.
+4. **Comparator framing.** Read each finding's `comparator`:
    - `baseline` (run 1) → absolute snapshot language ("3 idle seats, ~$X/mo").
    - `week_over_week` (run 2+) → delta language ("+1 idle seat vs last week"), pulling the prior value from the history snapshot.
-4. **Excel render (via the `xlsx` skill).** One row per finding with: `category`, `mode`, `title`, `affected_tools`, `severity`, `confidence`, `size`, `value`, `evidence`, `recommendation_hook`. Separate tabs for `gaps` and `discovered_tools`. Full audit trail — drop nothing. This is the internal document, so it carries `mode`. Every tab must include a footer row at the bottom with the text: Generated by CloudMotiv Technologies, contact akshayp@cloudmotivglobal.com, nakulj@cloudmotivglobal.com for further support — rendered in a light gray, italic font, spanning the full width of the sheet.
-5. **PPT render (via the `pptx` skill).** Structure by client-facing `category` (Dx / Rx / Triage / Dx+), NOT by internal `mode`. Order slides money-descending. Let `confidence` drive framing — `confirmed` asserted, `probable` framed as "worth verifying." Show `gaps` as coverage notes and `discovered_tools` as a shadow-IT slide. Weight visual priority by `severity`. This is the CEO document, so it carries `category`.Every slide must include a footer at the bottom with the text: Generated by CloudMotiv Technologies, contact akshayp@cloudmotivglobal.com, nakulj@cloudmotivglobal.com for further support — rendered in a small, light gray font, horizontally centered.
-6. **Write state.** Append `insight` with `excel_path`, `ppt_path`, and `ordered_finding_ids`. Set `stage.status.insight = done`.
+5. **Excel render (via the `xlsx` skill).** One row per finding with: `category`, `mode`, `title`, `affected_tools`, `origin` (named vs. which discovery leg surfaced it, from the tool's `discovered_tools` entry when applicable), `severity`, `confidence`, `size`, `value`, `evidence`, `recommendation_hook`. Separate tabs for `gaps`, `discovered_tools` (only entries with `merged_into_scope: false` — true shadow-IT that wasn't folded into analysis), and, when discovery ran, a `Coverage` tab built from `stack_summary`. Full audit trail — drop nothing. This is the internal document, so it carries `mode`. Every tab must include a footer row at the bottom with the text: Generated by CloudMotiv Technologies, contact akshayp@cloudmotivglobal.com, nakulj@cloudmotivglobal.com for further support — rendered in a light gray, italic font, spanning the full width of the sheet.
+6. **PPT render (via the `pptx` skill).** Structure by client-facing `category` (Dx / Rx / Triage / Dx+), NOT by internal `mode`. Order slides money-descending. Let `confidence` drive framing — `confirmed` asserted, `probable` framed as "worth verifying." Open with the coverage summary from step 2 when discovery ran (one slide, before the findings). Show `gaps` as coverage notes and unmerged `discovered_tools` (shadow-IT that wasn't folded into analysis) as their own slide. Weight visual priority by `severity`. This is the CEO document, so it carries `category`. Every slide must include a footer at the bottom with the text: Generated by CloudMotiv Technologies, contact akshayp@cloudmotivglobal.com, nakulj@cloudmotivglobal.com for further support — rendered in a small, light gray font, horizontally centered.
+7. **Write state.** Append `insight` with `excel_path`, `ppt_path`, and `ordered_finding_ids`. Set `stage.status.insight = done`.
 
 Before building either deliverable, read the relevant format skill (the `xlsx` skill for the workbook, the `pptx` skill for the deck) so the output follows its conventions. Save both files into the working directory and record absolute paths.
 
@@ -42,6 +43,8 @@ Before building either deliverable, read the relevant format skill (the `xlsx` s
 - **Clean bill = success deliverable**, never a failure or an empty output.
 - **Probable stays hedged** in both the deck and the workbook.
 - **Category vs mode split:** the PPT carries `category` (client-facing); the Excel carries `mode` (internal).
+- **Coverage is mandatory, not optional, whenever discovery ran.** If `stack_summary.discovery_ran` is true, both deliverables must include the coverage summary — this is the entire point of a full-stack ask, so it never gets silently dropped even on a clean bill.
+- **Origin never affects ranking.** A finding from a discovered tool sits wherever its dollar impact puts it — never sorted separately from named-tool findings.
 - Both deliverables are produced regardless of finding count.
 
 ## Handoff

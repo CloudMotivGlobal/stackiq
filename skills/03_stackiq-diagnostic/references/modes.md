@@ -1,6 +1,8 @@
 # StackIQ Diagnostic — the six analysis modes
 
-Modes are selected at runtime from the problem statement + intake, and they compose (a run can fire several). Each finding records the single `mode` it came from; cross-mode dedup (pipeline step 8) collapses duplicates afterward. Skip any mode whose preconditions aren't met and log the reason as a gap.
+Modes are selected at runtime from the problem statement + intake, and they compose (a run can fire several). Each finding records the single `mode` it came from; cross-mode dedup (pipeline step 10) collapses duplicates afterward. Skip any mode whose preconditions aren't met and log the reason as a gap.
+
+Modes only run on tools that reach the deep-dive stage. Under `auto_discover`, every in-scope tool is triaged first (pipeline step 2, detailed in `references/discovery.md`); a mode fires only against tools with `triage_result: flagged` (or any named tool, on a run where discovery didn't run at all). A triage-`clean` tool never enters mode analysis — it gets a one-line "reviewed, nothing found" entry instead.
 
 ## Table of contents
 - node

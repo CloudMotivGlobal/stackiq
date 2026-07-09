@@ -43,7 +43,7 @@ Branch on the affected tool's `billing_model` (from the diagnostic snapshot). Ne
 | `flat` | a single subscription no one uses | cancel it, or consolidate into an overlapping tool |
 | `tiered` | paying for a tier the usage doesn't justify | right-size the tier down to the usage-justified level |
 
-Use the finding's `recommendation_hook` as the seed and make it concrete against the named tool/vendor from `intake.scope`.
+Use the finding's `recommendation_hook` as the seed and make it concrete against the named tool/vendor from `intake.scope`. This applies identically whether the tool was named at intake or surfaced by Diagnostic's stack discovery — `billing_model` is what routes the action, not how the tool entered scope.
 
 ## Routing decision tree
 For each translated action, classify into exactly one route:

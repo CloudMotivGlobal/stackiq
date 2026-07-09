@@ -6,15 +6,16 @@ description: >
   routed internally, never called directly by the user. Trigger WHENEVER the user states a problem
   about AI or SaaS adoption, spend, seats, licenses, tool utilization, wasted subscriptions, or tool
   sprawl, or says "run StackIQ", "audit my stack", "are my tools being used", "find wasted spend",
-  "check my SaaS costs", "weekly stack review". Pure routing, zero analysis. Boot sequence runs an
-  env self-check and a Chrome connection check (both silent, hard-stop on fail), greets, captures the
+  "check my SaaS costs", "weekly stack review", "find every tool I'm using", "what's in my whole
+  stack", "audit everything we pay for". Pure routing, zero analysis. Boot sequence runs an env
+  self-check and a Chrome connection check (both silent, hard-stop on fail), greets, captures the
   problem statement into state/session.json, then auto-advances the stages. Holds the problem
   statement for the whole session via the state file. Halt-and-report on any downstream failure.
 ---
 
 # StackIQ Orchestrator (Skill 1 of 5)
 
-The single entry point for a StackIQ run. It routes; it never researches, analyzes, or writes findings. All substantive work happens in Skills 2 to 5. Its only job is to boot the environment, capture the problem statement, own the shared state file, and advance the pipeline stage by stage.
+The single entry point for a StackIQ run. It routes; it never researches, analyzes, or writes findings. All substantive work happens in Skills 2 to 5 — including the decision of whether a run targets named tools, a full-stack auto-discovery, or both, which belongs to Intake, not here. Its only job is to boot the environment, capture the problem statement, own the shared state file, and advance the pipeline stage by stage.
 
 ## Canonical state contract
 
@@ -28,11 +29,11 @@ The full field-by-field schema for both files lives in `references/state-schema.
 ## Boot sequence (run in order, stop on first failure)
 
 1. **Env self-check (silent).** Confirm the working directory is writable and that `state/session.json` can be created. If not, hard stop: report "StackIQ can't write to its working directory" and end. Do not proceed.
-2. **Chrome check (silent).** Confirm Claude in Chrome is connected (Diagnostic and Action may need signed-in read/click access). If not connected, hard stop and tell the user to connect the Chrome extension before rerunning. Do not proceed.
+2. **Chrome check (silent).** Confirm Claude in Chrome is connected (Diagnostic and Action may need signed-in read/click access; full-stack discovery additionally reads the SSO app catalog and, sometimes, an expense platform through it). If not connected, hard stop and tell the user to connect the Chrome extension before rerunning. Do not proceed.
 3. **Welcome message (mandatory, always print to the user).** This is the first thing the user sees — never skip it, never fold it silently into a tool call. After the silent checks pass, print a short welcome that names StackIQ, says in one line what it does, and asks for the problem statement. Then stop and wait for the user's reply. Keep it to ~2–3 short lines. Use this template (adapt wording, keep the structure):
 
    > **StackIQ — AI/SaaS utilization diagnostic.**
-   > I audit your tools for wasted spend, idle seats, overlap, and access risk, then hand you a sized report and approve-before-anything-happens fixes.
+   > I audit your tools for wasted spend, idle seats, overlap, and access risk, then hand you a sized report and approve-before-anything-happens fixes. Name specific tools, or ask me to find your whole stack and I'll discover it myself.
    > What tool, spend, or adoption problem should I dig into?
 
    If this is run 2+ (prior snapshots exist), add a line noting it's a follow-up run and will compare against last week.
@@ -55,6 +56,7 @@ Set `stage.current` to the stage in flight throughout, so a resumed run knows wh
 ## Guardrails
 
 - **Never analyze.** The orchestrator does no research, sizing, sourcing, or drafting. If tempted to "just check one number," stop — that belongs to Diagnostic.
+- **Never decide scope or discovery.** Whether this run targets named tools, full-stack auto-discovery, or both is Intake's call (`intake.scope.discovery_mode`), never the orchestrator's. The welcome message may mention the capability exists; it never itself infers or sets it.
 - **Hard stop** on env or Chrome check failure (steps 1 to 2). No partial runs.
 - **Halt-and-report** on any downstream skill failure: set `stage.status.<skill>` to `halted`, write `stage.halt_reason` with the cause, tell the user plainly what failed and at which stage, and stop. Do not silently skip a stage or fabricate its output.
 - **One writer per block.** The orchestrator never writes another skill's block; sub-skills never write the orchestrator's stage/env fields.
