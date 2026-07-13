@@ -1,6 +1,6 @@
 # StackIQ
 
-A AI/SaaS utilization diagnostic for Claude (Cowork / Claude Code). StackIQ audits how well an organization's AI and SaaS tools are actually used — finding idle seats, tier mismatches, duplicate tools, orphaned accounts, and shadow IT — sizes every finding in dollars, seats, or accounts, ships an Excel workbook and a CEO-level deck, and then executes approved remediations behind a hard human-approval gate. Name the tools you want checked, or ask StackIQ to find your whole stack itself.
+An AI/SaaS utilization diagnostic for Claude (Cowork / Claude Code). StackIQ audits how well an organization's AI and SaaS tools are actually used — finding idle seats, tier mismatches, duplicate tools, orphaned accounts, and shadow IT — sizes every finding in dollars, seats, or accounts, ships an Excel workbook and a CEO-level deck, and then executes approved remediations behind a hard human-approval gate. Name the tools you want checked, or ask StackIQ to find your whole stack itself.
 
 <img width="1345" height="402" alt="image" src="https://github.com/user-attachments/assets/7a7ca82b-6d6c-44f7-8a1a-25fd7c328f6f" />
 
